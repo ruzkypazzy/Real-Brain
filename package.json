@@ -1,7 +1,7 @@
 {
-  "name": "real-brain",
+  "name": "Real-Brain",
   "version": "1.0.0",
-  "description": "Persistent Memory Skill for Pharos Agent Centre - AI agent memory that survives across sessions",
+  "description": "Persistent Memory Skill for Pharos Agent - AI agent memory that survives across sessions",
   "author": "ruzkypazzy",
   "license": "MIT",
   "main": "dist/index.js",
