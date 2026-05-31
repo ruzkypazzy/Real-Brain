@@ -234,3 +234,132 @@ async function simpleHash(input: string): Promise {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) return null;
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+// Initialize or load memory vault
+export async function initializeMemory(storagePath?: string): Promise {
+  try {
+    // Load existing vault for this device
+    const storedVault = retrieveVault();
+    const currentDeviceId = getDeviceId();
+
+    if (storedVault && storedVault.deviceId === currentDeviceId) {
+      // This device has a vault - restore it
+      memoryVault = storedVault.memoryVault;
+      sessionContext.passphraseHash = storedVault.passphraseHash || undefined;
+      (sessionContext as ExtendedSessionContext).saltHash = storedVault.saltHash || undefined;
+      sessionContext.isAuthenticated = false;
+      sessionContext.failedAttempts = 0;
+
+      return {
+        success: true,
+        message: "Memory vault restored for this device",
+        data: {
+          isAuthenticated: false,
+          hasExistingVault: !!storedVault.passphraseHash
+        },
+      };
+    }
+
+    // New device or no vault - create empty vault
+    memoryVault = createEmptyVault();
+    sessionContext.isAuthenticated = false;
+    sessionContext.failedAttempts = 0;
+    sessionContext.passphraseHash = undefined;
+    (sessionContext as ExtendedSessionContext).saltHash = undefined;
+
+    return {
+      success: true,
+      message: "New vault created for this device",
+      data: { isAuthenticated: false },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: `Failed to initialize memory: ${error.message}`,
+    };
+  }
+}
+
+// Create empty vault structure
+function createEmptyVault(): MemoryVault {
+  return {
+    version: "1.0.0",
+    userIdentity: {
+      walletAddresses: [],
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+    },
+    lastSession: {
+      summary: "",
+      timestamp: "",
+      tasksCompleted: [],
+      tasksPending: [],
+      networkUsed: "testnet",
+    },
+    preferences: {
+      preferredNetwork: "testnet",
+      gasSettings: {},
+      tokenPairs: [],
+      workflowPreferences: [],
+    },
+    watchlist: [],
+    transactionHistory: [],
+    customNotes: [],
+    warnings: [],
+    onchainMemory: {
+      deployedContracts: [],
+      interactedContracts: [],
+      contractABIs: [],
+      tokenBalances: [],
+      tokenTransfers: [],
+      gasHistory: [],
+      averageGasPrices: [],
+    },
+    security: DEFAULT_SECURITY,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ============================================================================
+// PASSPHRASE HASHING - Device-specific for multi-user safety
+// ============================================================================
+
+/**
+ * Hash passphrase with device ID
+ * This ensures that the same passphrase gives different hashes on different devices
+ */
+async function hashPassphrase(passphrase: string, salt?: string): Promise {
+  const deviceId = getDeviceId();
+  const actualSalt = salt || (deviceId + '_' + generateRandomString(SALT_LENGTH));
+  const combined = passphrase + actualSalt + '_device_bound';
+  const hash = await simpleHash(combined.repeat(HASH_ITERATIONS));
+
+  return {
+    hash,
+    salt: actualSalt,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+// Simple hash function (for demo - use proper crypto in production)
+async function simpleHash(input: string): Promise {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
