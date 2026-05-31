@@ -7,7 +7,7 @@ export interface Action {
   name: string;
   similes: string[];
   description: string;
-  examples: Array; output: Record; explanation: string }>>;
+  examples: Array<{ input: Record; output: Record; explanation: string }>;
   schema: any;
   handler: (agent: any, input: Record) => Promise;
 }
