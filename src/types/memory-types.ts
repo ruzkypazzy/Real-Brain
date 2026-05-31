@@ -187,4 +187,86 @@ export interface MemoryQueryResult {
   suggestions: string[];
   warnings: string[];
   context: string;
+}  from: string;
+  to: string;
+  amount: string;
+  timestamp: string;
+  txHash: string;
+}
+
+export interface GasRecord {
+  timestamp: string;
+  network: string;
+  gasPrice: string;
+  priorityFee: string;
+  baseFee: string;
+}
+
+export interface GasAverage {
+  network: string;
+  averageFast: string;
+  averageStandard: string;
+  averageSlow: string;
+}
+
+export interface UserIdentity {
+  walletAddresses: string[];
+  preferredWallet?: string;
+  createdAt: string;
+  lastActive: string;
+}
+
+export interface PassphraseHash {
+  hash: string;
+  salt: string;
+  createdAt: string;
+  lastChanged?: string;
+}
+
+export interface SecuritySettings {
+  autoLockMinutes: number;
+  maxFailedAttempts: number;
+  requireAuthOnStartup: boolean;
+}
+
+export interface MemoryVault {
+  version: string;
+  userIdentity: UserIdentity;
+  lastSession: LastSession;
+  preferences: UserPreferences;
+  watchlist: WatchlistItem[];
+  transactionHistory: TransactionRecord[];
+  customNotes: CustomNote[];
+  warnings: Warning[];
+  onchainMemory: OnchainMemory;
+  security: SecuritySettings;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionContext {
+  isAuthenticated: boolean;
+  passphraseHash?: string;
+  failedAttempts: number;
+  lastActivity: string;
+}
+
+export interface RealBrainConfig {
+  storagePath?: string;
+  autoSave: boolean;
+  maxMemorySize: number;
+  encryptionEnabled: boolean;
+}
+
+export interface MemoryOperationResult {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface MemoryQueryResult {
+  relevantMemories: any[];
+  suggestions: string[];
+  warnings: string[];
+  context: string;
 }
