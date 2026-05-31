@@ -36,7 +36,7 @@ const SENSITIVE_PATTERNS = [
 /**
  * Save a memory/note
  */
-export async function saveMemory(content: string, category?: string): Promise {
+export async function saveMemory(content: string, category?: string): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -72,7 +72,7 @@ export async function saveMemory(content: string, category?: string): Promise {
 /**
  * Save user preferences
  */
-export async function savePreferences(preferences: Partial): Promise {
+export async function savePreferences(preferences: Partial): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -112,7 +112,7 @@ export async function saveSessionSummary(
   tasksCompleted: string[],
   tasksPending: string[],
   network: "mainnet" | "testnet"
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -146,7 +146,7 @@ export async function addToWatchlist(
   type: "token" | "contract" | "wallet",
   label: string,
   notes?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -199,7 +199,7 @@ export async function recordTransaction(
   errorReason?: string,
   contract?: string,
   tokenAmount?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -250,7 +250,7 @@ export async function addWarning(
   type: "failed_tx" | "contract_error" | "security" | "testnet_only",
   description: string,
   relatedAddress?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -287,7 +287,7 @@ export async function saveGasPrice(
   gasPrice: string,
   priorityFee: string,
   baseFee: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { succe * Save session summary
@@ -297,7 +297,7 @@ export async function saveSessionSummary(
   tasksCompleted: string[],
   tasksPending: string[],
   network: "mainnet" | "testnet"
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -331,7 +331,7 @@ export async function addToWatchlist(
   type: "token" | "contract" | "wallet",
   label: string,
   notes?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -384,7 +384,7 @@ export async function recordTransaction(
   errorReason?: string,
   contract?: string,
   tokenAmount?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -435,7 +435,7 @@ export async function addWarning(
   type: "failed_tx" | "contract_error" | "security" | "testnet_only",
   description: string,
   relatedAddress?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -472,7 +472,7 @@ export async function saveGasPrice(
   gasPrice: string,
   priorityFee: string,
   baseFee: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { succe  network: "mainnet" | "testnet",
@@ -480,7 +480,7 @@ export async function saveGasPrice(
   errorReason?: string,
   contract?: string,
   tokenAmount?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -531,7 +531,7 @@ export async function addWarning(
   type: "failed_tx" | "contract_error" | "security" | "testnet_only",
   description: string,
   relatedAddress?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -568,7 +568,7 @@ export async function saveGasPrice(
   gasPrice: string,
   priorityFee: string,
   baseFee: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -607,7 +607,7 @@ export async function saveContractInteraction(
   address: string,
   name: string,
   functionName?: string
-): Promise {
+): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -651,7 +651,7 @@ export async function saveContractInteraction(
 /**
  * Query memories with context
  */
-export async function queryMemories(query: string): Promise {
+export async function queryMemories(query: string): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return {
@@ -742,7 +742,7 @@ export async function queryMemories(query: string): Promise {
 /**
  * Get all memories (summary)
  */
-export async function getAllMemoriesSummary(): Promise {
+export async function getAllMemoriesSummary(): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -772,7 +772,7 @@ export async function getAllMemoriesSummary(): Promise {
 /**
  * Get unacknowledged warnings
  */
-export async function getWarnings(): Promise {
+export async function getWarnings(): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return [];
@@ -789,7 +789,7 @@ export async function getWarnings(): Promise {
 /**
  * Get recent transactions
  */
-export async function getRecentTransactions(limit: number = 10): Promise {
+export async function getRecentTransactions(limit: number = 10): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return [];
@@ -810,7 +810,7 @@ export async function getRecentTransactions(limit: number = 10): Promise {
 /**
  * Delete specific memory
  */
-export async function deleteMemory(noteId: string): Promise {
+export async function deleteMemory(noteId: string): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -837,7 +837,7 @@ export async function deleteMemory(noteId: string): Promise {
 /**
  * Remove from watchlist
  */
-export async function removeFromWatchlist(address: string): Promise {
+export async function removeFromWatchlist(address: string): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -864,7 +864,7 @@ export async function removeFromWatchlist(address: string): Promise {
 /**
  * Acknowledge a warning
  */
-export async function acknowledgeWarning(warningId: string): Promise {
+export async function acknowledgeWarning(warningId: string): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -891,7 +891,7 @@ export async function acknowledgeWarning(warningId: string): Promise {
 /**
  * Clear all memories (factory reset)
  */
-export async function clearAllMemories(): Promise {
+export async function clearAllMemories(): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };
@@ -933,7 +933,7 @@ export async function clearAllMemories(): Promise {
 /**
  * Acknowledge all warnings
  */
-export async function acknowledgeAllWarnings(): Promise {
+export async function acknowledgeAllWarnings(): Promise<MemoryOperationResult> {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
     return { success: false, message: "Memory vault is locked. Please authenticate first." };

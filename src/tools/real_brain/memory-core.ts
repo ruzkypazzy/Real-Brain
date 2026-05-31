@@ -120,7 +120,7 @@ function retrieveVault(): StoredVault | null {
 // ============================================================================
 
 // Initialize or load memory vault
-export async function initializeMemory(storagePath?: string): Promise {
+export async function initializeMemory(storagePath?: string): Promise<MemoryOperationResult> {
   try {
     // Load existing vault for this device
     const storedVault = retrieveVault();
@@ -213,7 +213,7 @@ function createEmptyVault(): MemoryVault {
  * Hash passphrase with device ID
  * This ensures that the same passphrase gives different hashes on different devices
  */
-async function hashPassphrase(passphrase: string, salt?: string): Promise {
+async function hashPassphrase(passphrase: string, salt?: string): Promise<MemoryOperationResult> {
   const deviceId = getDeviceId();
   const actualSalt = salt || (deviceId + '_' + generateRandomString(SALT_LENGTH));
   const combined = passphrase + actualSalt + '_device_bound';
@@ -227,7 +227,7 @@ async function hashPassphrase(passphrase: string, salt?: string): Promise {
 }
 
 // Simple hash function (for demo - use proper crypto in production)
-async function simpleHash(input: string): Promise {
+async function simpleHash(input: string): Promise<MemoryOperationResult> {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
@@ -249,7 +249,7 @@ async function simpleHash(input: string): Promise {
 // ============================================================================
 
 // Initialize or load memory vault
-export async function initializeMemory(storagePath?: string): Promise {
+export async function initializeMemory(storagePath?: string): Promise<MemoryOperationResult> {
   try {
     // Load existing vault for this device
     const storedVault = retrieveVault();
@@ -342,7 +342,7 @@ function createEmptyVault(): MemoryVault {
  * Hash passphrase with device ID
  * This ensures that the same passphrase gives different hashes on different devices
  */
-async function hashPassphrase(passphrase: string, salt?: string): Promise {
+async function hashPassphrase(passphrase: string, salt?: string): Promise<MemoryOperationResult> {
   const deviceId = getDeviceId();
   const actualSalt = salt || (deviceId + '_' + generateRandomString(SALT_LENGTH));
   const combined = passphrase + actualSalt + '_device_bound';
@@ -356,7 +356,7 @@ async function hashPassphrase(passphrase: string, salt?: string): Promise {
 }
 
 // Simple hash function (for demo - use proper crypto in production)
-async function simpleHash(input: string): Promise {
+async function simpleHash(input: string): Promise<MemoryOperationResult> {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
@@ -378,7 +378,7 @@ async function simpleHash(input: string): Promise {
 // ============================================================================
 
 // Initialize or load memory vault
-export async function initializeMemory(storagePath?: string): Promise {
+export async function initializeMemory(storagePath?: string): Promise<MemoryOperationResult> {
   try {
     // Load existing vault for this device
     const storedVault = retrieveVault();
@@ -471,7 +471,7 @@ function createEmptyVault(): MemoryVault {
  * Hash passphrase with device ID
  * This ensures that the same passphrase gives different hashes on different devices
  */
-async function hashPassphrase(passphrase: string, salt?: string): Promise {
+async function hashPassphrase(passphrase: string, salt?: string): Promise<MemoryOperationResult> {
   const deviceId = getDeviceId();
   const actualSalt = salt || (deviceId + '_' + generateRandomString(SALT_LENGTH));
   const combined = passphrase + actualSalt + '_device_bound';
@@ -485,7 +485,7 @@ async function hashPassphrase(passphrase: string, salt?: string): Promise {
 }
 
 // Simple hash function (for demo - use proper crypto in production)
-async function simpleHash(input: string): Promise {
+async function simpleHash(input: string): Promise<MemoryOperationResult> {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
