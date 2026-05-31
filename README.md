@@ -72,8 +72,8 @@ Real Brain solves this by giving your AI agent a persistent memory that:
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/ruzkypazzy/pharos-real-brain.git
-cd pharos-real-brain
+git clone https://github.com/ruzkypazzy/Real-Brain.git
+cd Real-Brain
 ```
 
 ### Install Dependencies
