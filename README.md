@@ -161,6 +161,125 @@ const greeting = await generateSessionGreeting();
 
 ### LangChain Tools
 ```typescript
+import { createRealBrainTools } from "./langchain/real_brain/real-brain-tool";
+
+// Create all 25 Real Brain tools
+const tools = createRealBrainTools();
+
+// Use with any LangChain-compatible agent
+const agent = new ChatOpenAI({ model: "gpt-4" });
+const agentWithTools = agent.bind(tools);
+```
+
+### MCP Actions
+```typescript
+import { realBrainActions } from "./actions/real_brain";
+
+// All 17 actions available for MCP integration
+// Actions include: AUTHENTICATE, SAVE_MEMORY, QUERY_MEMORIES,
+// GET_CONTEXTUAL_SUGGESTIONS, CHECK_ACTION_SAFETY, etc.
+```
+
+## Memory Categories
+
+| Category | Description | Tools |
+|----------|-------------|-------|
+| Last Session | Summary, tasks completed, pending | `save_session_summary`, `get_session_greeting` |
+| Preferences | Network, gas, tokens, workflows | `save_preferences`, `query_memories` |
+| Watchlist | Wallets, tokens, contracts | `add_to_watchlist`, `remove_from_watchlist` |
+| Transaction History | Hash, purpose, status, error | `record_transaction`, `get_recent_transactions` |
+| Custom Notes | User-defined memories | `save_memory`, `delete_memory` |
+| Warnings | Failed txs, errors, lessons | `add_warning`, `get_warnings`, `acknowledge_warning` |
+| Onchain Memory | Deploys, interactions, gas | `save_contract_interaction`, `save_gas_price`, `get_contract_memory` |
+
+## Security Rules
+
+### NEVER Stored
+- Private keys (64 hex characters)
+- Seed phrases or mnemonics
+- Wallet passwords
+- API keys or secrets
+- Full names, emails, phone numbers
+
+### Always Required
+- Passphrase authentication
+- Re-authentication after lock
+- Maximum 5 failed attempts per session
+
+### Protected by Default
+- No raw data dumps to user
+- Summary-based responses
+- Silent warning acknowledgment
+
+## Pharos Blockchain Context
+
+### Supported Networks
+| Network | Chain ID | RPC URL |
+|---------|----------|---------|
+| Pharos Pacific Mainnet | 1672 | https://rpc.pharos.xyz |
+| Pharos Atlantic Testnet | 688689 | https://atlantic.dplabs-internal.com |
+
+### Onchain Memory Features
+Real Brain automatically tracks:
+- Contract deployments (address, name, type, deployer, timestamp, network, tx hash)
+- Contract interactions (address, name, ### 3. Authenticate Every Session
+```typescript
+import { authenticate } from "./tools/real_brain/memory-core";
+
+const result = await authenticate("yourSecurePassphrase123");
+if (result.success) {
+  // Memory unlocked, get session greeting
+}
+```
+
+### 4. Save Memories
+```typescript
+import { saveMemory, addToWatchlist, savePreferences } from "./tools/real_brain/memory-operations";
+
+// Remember a wallet
+await addToWatchlist("0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1", "wallet", "Main Trading Wallet", "Used for DeFi");
+
+// Remember a preference
+await savePreferences({
+  preferredNetwork: "testnet",
+  maxGasPrice: "30"
+});
+
+// Save arbitrary memory
+await saveMemory("This contract is my DEX router", "protocol");
+```
+
+### 5. Get Contextual Suggestions
+```typescript
+import { getContextualSuggestions, checkActionSafety } from "./tools/real_brain/contextual-suggestions";
+
+// Before sending to mainnet
+const suggestions = await getContextualSuggestions({
+  currentAction: "deploy",
+  network: "mainnet"
+});
+
+// Before any blockchain write
+const safety = await checkActionSafety({
+  type: "send",
+  targetAddress: "0x1234...",
+  network: "mainnet"
+});
+```
+
+### 6. Session Greeting
+```typescript
+import { generateSessionGreeting } from "./tools/real_brain/contextual-suggestions";
+
+const greeting = await generateSessionGreeting();
+// "Welcome back! Last session you were deploying a new token.
+// You have 1 pending task: verify contract. 2 warnings need attention."
+```
+
+## AI Agent Integration
+
+### LangChain Tools
+```typescript
 import { createRealBrainTools } from "./langchain/real_brain";
 
 // Create all 25 Real Brain tools
