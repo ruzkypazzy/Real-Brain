@@ -5,23 +5,112 @@
  */
 
 // Export all memory operation functions
-export async function saveMemory(content: string, category?: string): Promise { ... }
-export async function savePreferences(preferences: Partial): Promise { ... }
-export async function saveSessionSummary(summary: string, tasksCompleted: string[], tasksPending: string[], network: "mainnet" | "testnet"): Promise { ... }
-export async function addToWatchlist(address: string, type: "token" | "contract" | "wallet", label: string, notes?: string): Promise { ... }
-export async function recordTransaction(hash: string, purpose: string, network: "mainnet" | "testnet", status: "success" | "failed" | "pending", errorReason?: string, contract?: string, tokenAmount?: string): Promise { ... }
-export async function addWarning(type: "failed_tx" | "contract_error" | "security" | "testnet_only", description: string, relatedAddress?: string): Promise { ... }
-export async function saveGasPrice(network: string, gasPrice: string, priorityFee: string, baseFee: string): Promise { ... }
-export async function saveContractInteraction(address: string, name: string, functionName?: string): Promise { ... }
-export async function queryMemories(query: string): Promise { ... }
-export async function getAllMemoriesSummary(): Promise { ... }
-export async function getWarnings(): Promise { ... }
-export async function getRecentTransactions(limit?: number): Promise { ... }
-export async function deleteMemory(noteId: string): Promise { ... }
-export async function removeFromWatchlist(address: string): Promise { ... }
-export async function acknowledgeWarning(warningId: string): Promise { ... }
-export async function clearAllMemories(): Promise { ... }
-export async function acknowledgeAllWarnings(): Promise { ... }  tasksPending: string[],
+import {
+  MemoryVault,
+  WatchlistItem,
+  TransactionRecord,
+  Warning,
+  GasRecord,
+  MemoryOperationResult,
+  MemoryQueryResult,
+  UserPreferences,
+} from "../types/memory-types";
+import { getAuthStatus, getVault } from "./memory-core";
+
+// ============================================================================
+// SENSITIVE DATA PATTERNS
+// ============================================================================
+
+const SENSITIVE_PATTERNS = [
+  /0x[a-fA-F0-9]{40}/g, // Ethereum addresses
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, // Emails
+  /\b\d{16,}\b/g, // Credit card-like numbers
+  /private[_-]?key/i,
+  /secret/i,
+];
+
+// ============================================================================
+// SAVE OPERATIONS
+// ============================================================================
+
+/**
+ * Save a memory/note
+ */
+export async function saveMemory(content: string, category?: string): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  // Check for sensitive data
+  if (containsSensitiveData(content)) {
+    return { success: false, message: "Memory contains sensitive data and cannot be saved." };
+  }
+
+  const note = {
+    id: generateId(),
+    content,
+    category: category || "general",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  vault.customNotes.push(note);
+
+  return {
+    success: true,
+    message: "Memory saved successfully",
+    data: { note },
+  };
+}
+
+/**
+ * Save user preferences
+ */
+export async function savePreferences(preferences: Partial): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  // Update preferences
+  if (preferences.preferredNetwork) {
+    vault.preferences.preferredNetwork = preferences.preferredNetwork;
+  }
+  if (preferences.gasSettings) {
+    vault.preferences.gasSettings = { ...vault.preferences.gasSettings, ...preferences.gasSettings };
+  }
+  if (preferences.tokenPairs) {
+    vault.preferences.tokenPairs = preferences.tokenPairs;
+  }
+  if (preferences.workflowPreferences) {
+    vault.preferences.workflowPreferences = preferences.workflowPreferences;
+  }
+
+  return {
+    success: true,
+    message: "Preferences saved",
+    data: { preferences: vault.preferences },
+  };
+}
+
+/**
+ * Save session summary
+ */
+export async function saveSessionSummary(
+  summary: string,
+  tasksCompleted: string[],
+  tasksPending: string[],
   network: "mainnet" | "testnet"
 ): Promise {
   const auth = getAuthStatus();
@@ -106,6 +195,102 @@ export async function recordTransaction(
   hash: string,
   purpose: string,
   network: "mainnet" | "testnet",
+  status: "success" | "failed" | "pending",
+  errorReason?: string,
+  contract?: string,
+  tokenAmount?: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  const tx: TransactionRecord = {
+    hash,
+    timestamp: new Date().toISOString(),
+    purpose,
+    network,
+    status,
+    errorReason,
+    contract,
+    tokenAmount,
+  };
+
+  vault.transactionHistory.push(tx);
+
+  // If failed, create a warning
+  if (status === "failed") {
+    const warning: Warning = {
+      id: generateId(),
+      type: "failed_tx",
+      description: `Transaction failed: ${purpose}`,
+      relatedAddress: contract,
+      createdAt: new Date().toISOString(),
+      acknowledged: false,
+    };
+    vault.warnings.push(warning);
+  }
+
+  return {
+    success: true,
+    message: `Transaction recorded: ${status}`,
+    data: { transaction: tx },
+  };
+}
+
+/**
+ * Add a warning
+ */
+export async function addWarning(
+  type: "failed_tx" | "contract_error" | "security" | "testnet_only",
+  description: string,
+  relatedAddress?: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  const warning: Warning = {
+    id: generateId(),
+    type,
+    description,
+    relatedAddress,
+    createdAt: new Date().toISOString(),
+    acknowledged: false,
+  };
+
+  vault.warnings.push(warning);
+
+  return {
+    success: true,
+    message: "Warning added",
+    data: { warning },
+  };
+}
+
+/**
+ * Save gas price for future reference
+ */
+export async function saveGasPrice(
+  network: string,
+  gasPrice: string,
+  priorityFee: string,
+  baseFee: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { succe  network: "mainnet" | "testnet",
   status: "success" | "failed" | "pending",
   errorReason?: string,
   contract?: string,
