@@ -1,0 +1,25 @@
+{
+  "name": "real-brain",
+  "version": "1.0.0",
+  "description": "Persistent Memory Skill for Pharos Agent Centre - AI agent memory that survives across sessions",
+  "author": "ruzkypazzy",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
