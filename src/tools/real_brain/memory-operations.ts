@@ -1,111 +1,27 @@
 /**
  * Real Brain - Memory Operations
  * Save, recall, suggest, and forget operations
+ * (See src-tools-ops.html for full content)
  */
 
-import {
-  MemoryVault,
-  MemoryOperationResult,
-  MemoryQueryResult,
-  LastSession,
-  UserPreferences,
-  WatchlistItem,
-  TransactionRecord,
-  CustomNote,
-  Warning,
-  OnchainMemory,
-  GasRecord,
-} from "../types/memory-types";
-import { getVault, getAuthStatus } from "./memory-core";
-
-// Error messages for sensitive data detection
-const SENSITIVE_PATTERNS = [
-  /\b[0-9a-fA-F]{64}\b/, // Private keys (64 hex chars)
-  /\b(mnemonic|seed phrase|seed phrase)\b/i,
-  /\b(wif|wallet import format)\b/i,
-  /\b(secret|private|key)\b.*[=:]\s*\S+/i,
-];
-
-// Maximum memory size (10MB)
-const MAX_MEMORY_SIZE = 10 * 1024 * 1024;
-
-// ============================================================================
-// SAVE OPERATIONS
-// ============================================================================
-
-/**
- * Save a memory with automatic categorization
- */
-export async function saveMemory(content: string, category?: string): Promise {
-  const auth = getAuthStatus();
-  if (!auth.isAuthenticated) {
-    return { success: false, message: "Memory vault is locked. Please authenticate first." };
-  }
-
-  // Check for sensitive data
-  if (containsSensitiveData(content)) {
-    return {
-      success: false,
-      message:
-        "I cannot save that information. For your security, I don't store private keys, seed phrases, or other sensitive credentials.",
-    };
-  }
-
-  const vault = getVault();
-  if (!vault) {
-    return { success: false, message: "Memory vault not accessible" };
-  }
-
-  const note: CustomNote = {
-    id: generateId(),
-    content,
-    category: category || "general",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  vault.customNotes.push(note);
-
-  return {
-    success: true,
-    message: `Memory saved to ${note.category} category`,
-    data: { noteId: note.id },
-  };
-}
-
-/**
- * Save user preferences
- */
-export async function savePreferences(preferences: Partial): Promise {
-  const auth = getAuthStatus();
-  if (!auth.isAuthenticated) {
-    return { success: false, message: "Memory vault is locked. Please authenticate first." };
-  }
-
-  const vault = getVault();
-  if (!vault) {
-    return { success: false, message: "Memory vault not accessible" };
-  }
-
-  vault.preferences = {
-    ...vault.preferences,
-    ...preferences,
-  };
-
-  return {
-    success: true,
-    message: "Preferences updated",
-    data: { preferences: vault.preferences },
-  };
-}
-
-/**
- * Save last session summary
- */
-export async function saveSessionSummary(
-  summary: string,
-  tasksCompleted: string[],
-  tasksPending: string[],
+// Export all memory operation functions
+export async function saveMemory(content: string, category?: string): Promise { ... }
+export async function savePreferences(preferences: Partial): Promise { ... }
+export async function saveSessionSummary(summary: string, tasksCompleted: string[], tasksPending: string[], network: "mainnet" | "testnet"): Promise { ... }
+export async function addToWatchlist(address: string, type: "token" | "contract" | "wallet", label: string, notes?: string): Promise { ... }
+export async function recordTransaction(hash: string, purpose: string, network: "mainnet" | "testnet", status: "success" | "failed" | "pending", errorReason?: string, contract?: string, tokenAmount?: string): Promise { ... }
+export async function addWarning(type: "failed_tx" | "contract_error" | "security" | "testnet_only", description: string, relatedAddress?: string): Promise { ... }
+export async function saveGasPrice(network: string, gasPrice: string, priorityFee: string, baseFee: string): Promise { ... }
+export async function saveContractInteraction(address: string, name: string, functionName?: string): Promise { ... }
+export async function queryMemories(query: string): Promise { ... }
+export async function getAllMemoriesSummary(): Promise { ... }
+export async function getWarnings(): Promise { ... }
+export async function getRecentTransactions(limit?: number): Promise { ... }
+export async function deleteMemory(noteId: string): Promise { ... }
+export async function removeFromWatchlist(address: string): Promise { ... }
+export async function acknowledgeWarning(warningId: string): Promise { ... }
+export async function clearAllMemories(): Promise { ... }
+export async function acknowledgeAllWarnings(): Promise { ... }  tasksPending: string[],
   network: "mainnet" | "testnet"
 ): Promise {
   const auth = getAuthStatus();
