@@ -1,6 +1,6 @@
 /**
  * Real Brain Core - Memory Storage Engine
- * Handles all memory operations with passphrase authentication
+ * Handles all memory operations with device-based passphrase authentication
  */
 
 import {
@@ -9,10 +9,13 @@ import {
   PassphraseHash,
   SecuritySettings,
   MemoryOperationResult,
-  MemoryQueryResult,
 } from "../types/memory-types";
 
-// In-memory storage (would be file system in production)
+// Storage keys for localStorage persistence
+const STORAGE_KEY = 'realbrain_vault';
+const DEVICE_ID_KEY = 'realbrain_device_id';
+
+// In-memory storage (synced with localStorage)
 let memoryVault: MemoryVault | null = null;
 let sessionContext: SessionContext = {
   isAuthenticated: false,
@@ -32,25 +35,114 @@ const DEFAULT_SECURITY: SecuritySettings = {
   requireAuthOnStartup: true,
 };
 
+// ============================================================================
+// DEVICE ID MANAGEMENT - Ensures each device has its own vault
+// ============================================================================
+
+/**
+ * Get or create a unique device ID
+ * This ensures that each browser/device gets its own vault
+ */
+function getDeviceId(): string {
+  // Check if we're in a browser environment
+  if (typeof localStorage === 'undefined') {
+    // Node.js environment - generate a session ID
+    return 'node_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+}
+
+// ============================================================================
+// LOCALSTORAGE PERSISTENCE - Vault persists across sessions
+// ============================================================================
+
+interface StoredVault {
+  deviceId: string;
+  passphraseHash: string | null;
+  memoryVault: MemoryVault;
+  createdAt: string;
+  lastAccess: string;
+}
+
+/**
+ * Save vault to localStorage
+ * This ensures persistence across browser sessions
+ */
+function saveVault(): void {
+  if (!memoryVault || typeof localStorage === 'undefined') return;
+
+  const deviceId = getDeviceId();
+  const storedVault: StoredVault = {
+    deviceId,
+    passphraseHash: sessionContext.passphraseHash || null,
+    memoryVault,
+    createdAt: memoryVault.createdAt,
+    lastAccess: new Date().toISOString(),
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(storedVault));
+}
+
+/**
+ * Load vault from localStorage
+ * Returns null if no vault exists for this device
+ */
+function loadVault(): StoredVault | null {
+  if (typeof localStorage === 'undefined') return null;
+
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) return null;
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
 // Initialize or load memory vault
 export async function initializeMemory(storagePath?: string): Promise {
   try {
-    if (memoryVault) {
+    // Load existing vault for this device
+    const storedVault = loadVault();
+    const currentDeviceId = getDeviceId();
+
+    if (storedVault && storedVault.deviceId === currentDeviceId) {
+      // This device has a vault - restore it
+      memoryVault = storedVault.memoryVault;
+      sessionContext.passphraseHash = storedVault.passphraseHash || undefined;
+      sessionContext.isAuthenticated = false;
+      sessionContext.failedAttempts = 0;
+
       return {
         success: true,
-        message: "Memory vault already initialized",
-        data: { isAuthenticated: sessionContext.isAuthenticated },
+        message: "Memory vault restored for this device",
+        data: {
+          isAuthenticated: false,
+          hasExistingVault: !!storedVault.passphraseHash
+        },
       };
     }
 
-    // In production, this would load from file system
+    // New device or no vault - create empty vault
     memoryVault = createEmptyVault();
     sessionContext.isAuthenticated = false;
     sessionContext.failedAttempts = 0;
+    sessionContext.passphraseHash = undefined;
 
     return {
       success: true,
-      message: "Memory vault initialized",
+      message: "New vault created for this device",
       data: { isAuthenticated: false },
     };
   } catch (error: any) {
@@ -102,10 +194,53 @@ function createEmptyVault(): MemoryVault {
   };
 }
 
-// Hash passphrase with salt
+// ============================================================================
+// PASSPHRASE HASHING - Device-specific for multi-user safety
+// ============================================================================
+
+/**
+ * Hash passphrase with device ID
+ * This ensures that the same passphrase gives different hashes on different devices
+ */
 async function hashPassphrase(passphrase: string, salt?: string): Promise {
-  const actualSalt = salt || generateRandomString(SALT_LENGTH);
-  const combined = passphrase + actualSalt;
+  const deviceId = getDeviceId();
+  const actualSalt = salt || (deviceId + '_' + generateRandomString(SALT_LENGTH));
+  const combined = passphrase + actualSalt + '_device_bound';
+  const hash = await simpleHash(combined.repeat(HASH_ITERATIONS));
+
+  return {
+    hash,
+    salt: actualSalt,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+// Simple hash function (for demo - use proper crypto in production)
+async function simpleHash(input: string): Promise {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, "0");
+}
+
+// Generate random string
+function generateRandomString(length: number): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Verify passphrase
+async function verifyPassphrase(passphrase: string, storedHash: PassphraseHash): Promise {
+  const deviceId = getDeviceId();
+  const combined = passphrase + storedHash.salt + '_device_bound';
+    const combined = passphrase + actualSalt;
   const hash = await simpleHash(combined.repeat(HASH_ITERATIONS));
 
   return {
