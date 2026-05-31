@@ -290,6 +290,191 @@ export async function saveGasPrice(
 ): Promise {
   const auth = getAuthStatus();
   if (!auth.isAuthenticated) {
+    return { succe * Save session summary
+ */
+export async function saveSessionSummary(
+  summary: string,
+  tasksCompleted: string[],
+  tasksPending: string[],
+  network: "mainnet" | "testnet"
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  vault.lastSession = {
+    summary,
+    timestamp: new Date().toISOString(),
+    tasksCompleted,
+    tasksPending,
+    networkUsed: network,
+  };
+
+  return {
+    success: true,
+    message: "Session summary saved",
+    data: { session: vault.lastSession },
+  };
+}
+
+/**
+ * Add item to watchlist
+ */
+export async function addToWatchlist(
+  address: string,
+  type: "token" | "contract" | "wallet",
+  label: string,
+  notes?: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  // Basic address validation
+  if (!isValidAddress(address)) {
+    return { success: false, message: "Invalid address format" };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  // Check if already exists
+  const existing = vault.watchlist.find((item) => item.address.toLowerCase() === address.toLowerCase());
+  if (existing) {
+    return {
+      success: false,
+      message: `Address already in watchlist as "${existing.label}"`,
+    };
+  }
+
+  const item: WatchlistItem = {
+    address,
+    type,
+    label,
+    notes: notes || "",
+    addedAt: new Date().toISOString(),
+  };
+
+  vault.watchlist.push(item);
+
+  return {
+    success: true,
+    message: `Added ${label} to watchlist`,
+    data: { item },
+  };
+}
+
+/**
+ * Record a transaction
+ */
+export async function recordTransaction(
+  hash: string,
+  purpose: string,
+  network: "mainnet" | "testnet",
+  status: "success" | "failed" | "pending",
+  errorReason?: string,
+  contract?: string,
+  tokenAmount?: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  const tx: TransactionRecord = {
+    hash,
+    timestamp: new Date().toISOString(),
+    purpose,
+    network,
+    status,
+    errorReason,
+    contract,
+    tokenAmount,
+  };
+
+  vault.transactionHistory.push(tx);
+
+  // If failed, create a warning
+  if (status === "failed") {
+    const warning: Warning = {
+      id: generateId(),
+      type: "failed_tx",
+      description: `Transaction failed: ${purpose}`,
+      relatedAddress: contract,
+      createdAt: new Date().toISOString(),
+      acknowledged: false,
+    };
+    vault.warnings.push(warning);
+  }
+
+  return {
+    success: true,
+    message: `Transaction recorded: ${status}`,
+    data: { transaction: tx },
+  };
+}
+
+/**
+ * Add a warning
+ */
+export async function addWarning(
+  type: "failed_tx" | "contract_error" | "security" | "testnet_only",
+  description: string,
+  relatedAddress?: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
+    return { success: false, message: "Memory vault is locked. Please authenticate first." };
+  }
+
+  const vault = getVault();
+  if (!vault) {
+    return { success: false, message: "Memory vault not accessible" };
+  }
+
+  const warning: Warning = {
+    id: generateId(),
+    type,
+    description,
+    relatedAddress,
+    createdAt: new Date().toISOString(),
+    acknowledged: false,
+  };
+
+  vault.warnings.push(warning);
+
+  return {
+    success: true,
+    message: "Warning added",
+    data: { warning },
+  };
+}
+
+/**
+ * Save gas price for future reference
+ */
+export async function saveGasPrice(
+  network: string,
+  gasPrice: string,
+  priorityFee: string,
+  baseFee: string
+): Promise {
+  const auth = getAuthStatus();
+  if (!auth.isAuthenticated) {
     return { succe  network: "mainnet" | "testnet",
   status: "success" | "failed" | "pending",
   errorReason?: string,
