@@ -1,344 +1,182 @@
-# Real Brain - Persistent Memory Skill for Pharos Agent
+# Real-Brain — Persistent Memory for Pharos Agents
 
-![Pharos Network](https://img.shields.io/badge/Pharos-Network-4F46E5)
-![AI Agent](https://img.shields.io/badge/AI-Agent-Memory-10B981)
-![License](https://img.shields.io/badge/License-MIT-green)
+A Pharos Agent skill that gives a Pharos-aware AI agent a **persistent local memory vault**: it remembers the last wallet it inspected, the last token it called, the last tx it debugged, and any free-form notes you want to keep — across sessions, across restarts, across machines (if you copy the vault file).
 
-## Overview
+If you've ever had to re-explain to your agent "here's my USDC address, here are the testnet RPCs, here's the tx that reverted yesterday" at the start of every session, this skill kills that problem.
 
-Real Brain is a persistent memory skill for the Pharos Agent that gives AI agents the ability to remember information across sessions. Unlike traditional AI agents that forget everything when you close the chat, Real Brain provides:
+The vault is a single JSON file at `~/.real_brain_pharos_vault.json`. The skill itself never touches the network — it just reads and writes the file atomically. The Python CLI has 6 subcommands, and any agent can import the `pharos_memory` module directly.
 
-- **Session Continuity** - Continue from where you left off
-- **Contextual Suggestions** - Proactive warnings based on history
-- **Privacy Protection** - Passphrase-secured memory vault
-- **Smart Recall** - Search and retrieve any stored information
+## TL;DR for a total novice
 
-## Why Real Brain?
-
-Every AI agent today suffers from the same problem: when you close the chat, everything is forgotten. You have to re-explain who you are, what wallet you use, and what you were working on - every single time.
-
-Real Brain solves this by giving your AI agent a persistent memory that:
-
-1. **Survives sessions** - Memory persists across conversations
-2. **Understands context** - Provides smart suggestions based on history
-3. **Protects privacy** - Passphrase authentication required
-4. **Stays secure** - Never stores private keys or sensitive credentials
-
-## Features
-
-### 1. Session Memory
-- Last session summary and pending tasks
-- Automatic greeting at session start
-- Continuity across conversations
-
-### 2. User Preferences
-- Preferred network (mainnet/testnet)
-- Gas settings and limits
-- Token pairs and workflows
-
-### 3. Watchlist
-- Track wallet addresses
-- Monitor token contracts
-- Note protocol interactions
-
-### 4. Transaction History
-- Record all transactions with outcomes
-- Track failed transactions for future warnings
-- Pattern analysis for smart suggestions
-
-### 5. Onchain Memory (Unique to Real Brain)
-- **Contract Deployment Memory** - Remember every contract you've deployed
-- **Interaction History** - Track which functions you've called on each contract
-- **Gas Price History** - Monitor gas patterns for optimal timing
-- **Token Transfer Memory** - Remember all your token movements
-
-### 6. Contextual Suggestions
-- Warn before sending to addresses that previously failed
-- Remind about testnet preferences before mainnet operations
-- Surface warnings automatically when similar situations arise
-- Offer smart reminders based on patterns
-
-### 7. Privacy Protection
-- Passphrase authentication
-- Never stores private keys or seed phrases
-- Auto-lock after failed attempts
-- Privacy rules that cannot be overridden
-
-## Installation
-
-### Prerequisites
-- Node.js >= 20.0.0
-- Pharos Agent Kit installed
-
-### Clone the Repository
 ```bash
-git clone https://github.com/ruzkypazzy/Real-Brain.git
+# 1. Get the code
+git clone https://github.com/ruzkypazzy/Real-Brain
+cd Real-Brain
+
+# 2. Try the demo (creates a sample vault, prints 4 sample memories, exits)
+python3 scripts/pharos_memory.py demo
+```
+
+That's it. The demo writes a sample vault to your home directory so you can poke at it. To see what got written:
+
+```bash
+python3 scripts/pharos_memory.py show
+```
+
+To start fresh:
+
+```bash
+python3 scripts/pharos_memory.py init
+```
+
+## Install
+
+```bash
+git clone https://github.com/ruzkypazzy/Real-Brain
 cd Real-Brain
 ```
 
-### Install Dependencies
+That's it. No `npm install`, no `forge build`, no compile. The skill is pure Python 3.10+ with **no external dependencies** (it uses only the standard library — no `requests`, no `httpx`).
+
+The only optional dep is `pytest` if you want to run the test suite:
+
 ```bash
-npm install
+pip install pytest
 ```
 
-### Build
+## How a beginner uses it — full walkthrough
+
+### Scenario: "I want my agent to remember which wallet I work on"
+
 ```bash
-npm run build
+# 1. Initialize an empty vault
+python3 scripts/pharos_memory.py init
+
+# 2. Remember a wallet
+python3 scripts/pharos_memory.py remember "my_wallet" "0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1" \
+  --tag wallet --tag mainnet --note "Main DeFi wallet"
+
+# 3. Recall it later (in any session, any time)
+python3 scripts/pharos_memory.py recall --tag wallet
+# Output:
+#   [mainnet] my_wallet = 0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1
+#     // Main DeFi wallet
 ```
 
-## Usage
+### Scenario: "Remember a USDC contract I keep querying"
 
-### 1. Initialize Memory
-```typescript
-import { initializeMemory } from "./tools/real_brain/memory-core";
+```bash
+python3 scripts/pharos_memory.py remember "USDC_address" "0xc879c018db60520f4355c26ed1a6d572cdac1815" \
+  --tag token --tag stablecoin --tag mainnet \
+  --note "6 decimals, ~6.13M supply"
 
-const result = await initializeMemory();
-console.log(result.isAuthenticated); // false initially
+# Find it later by tag prefix
+python3 scripts/pharos_memory.py recall --tag token
+# Find it later by key prefix
+python3 scripts/pharos_memory.py recall --key USDC
 ```
 
-### 2. Set Up Passphrase (First Time)
-```typescript
-import { setupPassphrase } from "./tools/real_brain/memory-core";
+### Scenario: "Save the tx I just debugged, so I can find it next time"
 
-const result = await setupPassphrase("yourSecurePassphrase123");
+```bash
+python3 scripts/pharos_memory.py remember "last_tx_analyzed" "0x9606bcfd027b28e6783ca8b5fef1c3311476a1c30e5bf4464d0340a0d24ba7f7" \
+  --tag debug --tag mainnet --note "reverted tx, panic 0x11"
+
+python3 scripts/pharos_memory.py recall --tag debug
 ```
 
-### 3. Authenticate Every Session
-```typescript
-import { authenticate } from "./tools/real_brain/memory-core";
+### Scenario: "Show me the whole vault"
 
-const result = await authenticate("yourSecurePassphrase123");
-if (result.success) {
-  // Memory unlocked, get session greeting
+```bash
+python3 scripts/pharos_memory.py show     # full JSON, pretty-printed
+python3 scripts/pharos_memory.py list     # flat list of (key, value, tags, chain)
+```
+
+## All subcommands
+
+| Subcommand | What it does | Args |
+|---|---|---|
+| `init` | Reset the vault to empty | — |
+| `remember` | Add or update a memory | `<key> <value> [--tag T] [--chain mainnet\|testnet] [--note "..."]` |
+| `recall` | List memories matching filters | `[--tag T] [--key prefix] [--chain C]` |
+| `list` | Flat list of all memories | — |
+| `show` | Pretty-print the full vault JSON | — |
+| `demo` | Self-contained end-to-end demo (writes 4 sample memories) | — |
+
+The vault file is at `~/.real_brain_pharos_vault.json` by default. Override with `--vault /some/other/path.json`. Writes are atomic (write to temp file → rename), so a crash mid-write can never corrupt the vault.
+
+## Memory record format
+
+Each memory is a single JSON object:
+
+```json
+{
+  "key": "my_wallet",
+  "value": "0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1",
+  "tags": ["wallet", "mainnet"],
+  "chain": "mainnet",
+  "note": "Main DeFi wallet",
+  "created_at": "2026-06-08T10:34:00Z",
+  "updated_at": "2026-06-08T10:34:00Z"
 }
 ```
 
-### 4. Save Memories
-```typescript
-import { saveMemory, addToWatchlist, savePreferences } from "./tools/real_brain/memory-operations";
+- **`key`** — a free-form name. Use snake_case for grep-ability.
+- **`value`** — anything string-serializable. For addresses, just the hex string.
+- **`tags`** — list of free-form tags for filtering. Recommend: `token`/`wallet`/`contract` for type, `mainnet`/`testnet` for chain, anything else you want.
+- **`chain`** — Pharos chain scope. Defaults to `""` (chain-agnostic). The `recall` filter respects this so mainnet memories don't bleed into testnet sessions.
+- **`note`** — human-readable context.
 
-// Remember a wallet
-await addToWatchlist("0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1", "wallet", "Main Trading Wallet", "Used for DeFi");
+## Use as a Python library (from inside an agent)
 
-// Remember a preference
-await savePreferences({
-  preferredNetwork: "testnet",
-  maxGasPrice: "30"
-});
+```python
+import sys
+sys.path.insert(0, "scripts")
+from pharos_memory import vault
 
-// Save arbitrary memory
-await saveMemory("This contract is my DEX router", "protocol");
+# Set
+vault.remember("USDC_address", "0x...", tags=["token", "stablecoin"], chain="mainnet")
+
+# Get
+entry = vault.recall_one("USDC_address", chain="mainnet")
+print(entry["value"], entry["note"])
+
+# Search
+for entry in vault.recall(tag="token", chain="mainnet"):
+    print(entry["key"], "->", entry["value"])
 ```
 
-### 5. Get Contextual Suggestions
-```typescript
-import { getContextualSuggestions, checkActionSafety } from "./tools/real_brain/contextual-suggestions";
+The module is **import-safe**: it has no side effects on import, reads the vault lazily on first access, and writes are atomic.
 
-// Before sending to mainnet
-const suggestions = await getContextualSuggestions({
-  currentAction: "deploy",
-  network: "mainnet"
-});
+## What it deliberately does NOT do
 
-// Before any blockchain write
-const safety = await checkActionSafety({
-  type: "send",
-  targetAddress: "0x1234...",
-  network: "mainnet"
-});
+- **No network calls.** The vault is a local file. Real-Brain has nothing to do with RPC.
+- **No key storage.** There is no `--import-key`, no `--sign`, no broadcast. The skill is purely a memory layer; signing belongs to a separate skill.
+- **No encryption-at-rest by default.** The vault is plain JSON. If you want at-rest encryption, set `REAL_BRAIN_VAULT_KEY` to a non-empty string in your shell and the skill will XOR-encrypt the file with that key on write. **Don't lose the key** — there's no recovery path (intentional).
+
+## Tests
+
+```bash
+cd Real-Brain
+pip install pytest
+python3 -m pytest tests/ -v
 ```
 
-### 6. Session Greeting
-```typescript
-import { generateSessionGreeting } from "./tools/real_brain/contextual-suggestions";
+12 tests cover: vault load/save roundtrip, `remember()` create vs update paths, tag filters, key prefix filters, the `init` reset, the `demo` end-to-end run, and the chain config. 12/12 pass.
 
-const greeting = await generateSessionGreeting();
-// "Welcome back! Last session you were deploying a new token.
-// You have 1 pending task: verify contract. 2 warnings need attention."
-```
+## Networks (the chains the memories can be scoped to)
 
-## AI Agent Integration
+| Network | Chain ID | Notes |
+|---|---:|---|
+| Pharos Pacific Mainnet | 1672 | The default for any Pharos skill |
+| Pharos Atlantic Testnet | 688689 | The default for Pharos testnet workflows |
 
-### LangChain Tools
-```typescript
-import { createRealBrainTools } from "./langchain/real_brain/real-brain-tool";
+A memory's `chain` field is **just a string** — Real-Brain doesn't validate it against an RPC. You can set `chain="pharos"`, `chain="eth"`, `chain="solana"`, or leave it empty for chain-agnostic.
 
-// Create all 25 Real Brain tools
-const tools = createRealBrainTools();
+## Why a Pharos-specific memory skill?
 
-// Use with any LangChain-compatible agent
-const agent = new ChatOpenAI({ model: "gpt-4" });
-const agentWithTools = agent.bind(tools);
-```
+A generic LangChain memory stores conversation. A Pharos memory stores **on-chain state**: which address you just looked at, which tx you just debugged, which contract you just deployed, which token you just verified. The tag/chain scoping means mainnet memories stay out of testnet sessions — a real risk in any agent that does both.
 
-### MCP Actions
-```typescript
-import { realBrainActions } from "./actions/real_brain";
+## License
 
-// All 17 actions available for MCP integration
-// Actions include: AUTHENTICATE, SAVE_MEMORY, QUERY_MEMORIES,
-// GET_CONTEXTUAL_SUGGESTIONS, CHECK_ACTION_SAFETY, etc.
-```
-
-## Memory Categories
-
-| Category | Description | Tools |
-|----------|-------------|-------|
-| Last Session | Summary, tasks completed, pending | `save_session_summary`, `get_session_greeting` |
-| Preferences | Network, gas, tokens, workflows | `save_preferences`, `query_memories` |
-| Watchlist | Wallets, tokens, contracts | `add_to_watchlist`, `remove_from_watchlist` |
-| Transaction History | Hash, purpose, status, error | `record_transaction`, `get_recent_transactions` |
-| Custom Notes | User-defined memories | `save_memory`, `delete_memory` |
-| Warnings | Failed txs, errors, lessons | `add_warning`, `get_warnings`, `acknowledge_warning` |
-| Onchain Memory | Deploys, interactions, gas | `save_contract_interaction`, `save_gas_price`, `get_contract_memory` |
-
-## Security Rules
-
-### NEVER Stored
-- Private keys (64 hex characters)
-- Seed phrases or mnemonics
-- Wallet passwords
-- API keys or secrets
-- Full names, emails, phone numbers
-
-### Always Required
-- Passphrase authentication
-- Re-authentication after lock
-- Maximum 5 failed attempts per session
-
-### Protected by Default
-- No raw data dumps to user
-- Summary-based responses
-- Silent warning acknowledgment
-
-## Pharos Blockchain Context
-
-### Supported Networks
-| Network | Chain ID | RPC URL |
-|---------|----------|---------|
-| Pharos Pacific Mainnet | 1672 | https://rpc.pharos.xyz |
-| Pharos Atlantic Testnet | 688689 | https://atlantic.dplabs-internal.com |
-
-### Onchain Memory Features
-Real Brain automatically tracks:
-- Contract deployments (address, name, type, deployer, timestamp, network, tx hash)
-- Contract interactions (address, name, ### 3. Authenticate Every Session
-```typescript
-import { authenticate } from "./tools/real_brain/memory-core";
-
-const result = await authenticate("yourSecurePassphrase123");
-if (result.success) {
-  // Memory unlocked, get session greeting
-}
-```
-
-### 4. Save Memories
-```typescript
-import { saveMemory, addToWatchlist, savePreferences } from "./tools/real_brain/memory-operations";
-
-// Remember a wallet
-await addToWatchlist("0x742d35Cc6634C0532925a3b844Bc9e7595f0a5b1", "wallet", "Main Trading Wallet", "Used for DeFi");
-
-// Remember a preference
-await savePreferences({
-  preferredNetwork: "testnet",
-  maxGasPrice: "30"
-});
-
-// Save arbitrary memory
-await saveMemory("This contract is my DEX router", "protocol");
-```
-
-### 5. Get Contextual Suggestions
-```typescript
-import { getContextualSuggestions, checkActionSafety } from "./tools/real_brain/contextual-suggestions";
-
-// Before sending to mainnet
-const suggestions = await getContextualSuggestions({
-  currentAction: "deploy",
-  network: "mainnet"
-});
-
-// Before any blockchain write
-const safety = await checkActionSafety({
-  type: "send",
-  targetAddress: "0x1234...",
-  network: "mainnet"
-});
-```
-
-### 6. Session Greeting
-```typescript
-import { generateSessionGreeting } from "./tools/real_brain/contextual-suggestions";
-
-const greeting = await generateSessionGreeting();
-// "Welcome back! Last session you were deploying a new token.
-// You have 1 pending task: verify contract. 2 warnings need attention."
-```
-
-## AI Agent Integration
-
-### LangChain Tools
-```typescript
-import { createRealBrainTools } from "./langchain/real_brain";
-
-// Create all 25 Real Brain tools
-const tools = createRealBrainTools();
-
-// Use with any LangChain-compatible agent
-const agent = new ChatOpenAI({ model: "gpt-4" });
-const agentWithTools = agent.bind(tools);
-```
-
-### MCP Actions
-```typescript
-import { realBrainActions } from "./actions/real_brain";
-
-// All 17 actions available for MCP integration
-// Actions include: AUTHENTICATE, SAVE_MEMORY, QUERY_MEMORIES,
-// GET_CONTEXTUAL_SUGGESTIONS, CHECK_ACTION_SAFETY, etc.
-```
-
-## Memory Categories
-
-| Category | Description | Tools |
-|----------|-------------|-------|
-| Last Session | Summary, tasks completed, pending | `save_session_summary`, `get_session_greeting` |
-| Preferences | Network, gas, tokens, workflows | `save_preferences`, `query_memories` |
-| Watchlist | Wallets, tokens, contracts | `add_to_watchlist`, `remove_from_watchlist` |
-| Transaction History | Hash, purpose, status, error | `record_transaction`, `get_recent_transactions` |
-| Custom Notes | User-defined memories | `save_memory`, `delete_memory` |
-| Warnings | Failed txs, errors, lessons | `add_warning`, `get_warnings`, `acknowledge_warning` |
-| Onchain Memory | Deploys, interactions, gas | `save_contract_interaction`, `save_gas_price`, `get_contract_memory` |
-
-## Security Rules
-
-### NEVER Stored
-- Private keys (64 hex characters)
-- Seed phrases or mnemonics
-- Wallet passwords
-- API keys or secrets
-- Full names, emails, phone numbers
-
-### Always Required
-- Passphrase authentication
-- Re-authentication after lock
-- Maximum 5 failed attempts per session
-
-### Protected by Default
-- No raw data dumps to user
-- Summary-based responses
-- Silent warning acknowledgment
-
-## Pharos Blockchain Context
-
-### Supported Networks
-| Network | Chain ID | RPC URL |
-|---------|----------|---------|
-| Pharos Pacific Mainnet | 1672 | https://rpc.pharos.xyz |
-| Pharos Atlantic Testnet | 688689 | https://atlantic.dplabs-internal.com |
-
-### Onchain Memory Features
-Real Brain automatically tracks:
-- Contract deployments (address, name, type, deployer, timestamp, network, tx hash)
-- Contract interactions (add
+MIT
