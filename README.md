@@ -194,6 +194,52 @@ A memory's `chain` field is **just a string** — Real-Brain doesn't validate it
 
 A generic LangChain memory stores conversation. A Pharos memory stores **on-chain state**: which address you just looked at, which tx you just debugged, which contract you just deployed, which token you just verified. The tag/chain scoping means mainnet memories stay out of testnet sessions — a real risk in any agent that does both.
 
+
+## Framework
+
+| Layer | Tool |
+|---|---|
+| Engine | Python 3.9+ stdlib (urllib.request for RPC) |
+| CLI wrapper | bash + Foundry `cast` (optional fallback) |
+| JSON parsing | Python `json` stdlib |
+| Chain config | `assets/networks.json` (Pharos Skill Engine schema) |
+| Skill loader | Pharos Agent Center / Claude Code / Codex / OpenClaw |
+
+The skill is a Python engine wrapped by a bash CLI for ergonomics. Foundry's `cast` is optional and only used for manual cross-checks.
+
+## Dependencies
+
+| Dependency | Required? | Notes |
+|---|---|---|
+| Python ≥ 3.9 | **Yes** | For the analysis engine |
+| `bash` ≥ 4.0 | **Yes** | For the CLI wrapper |
+| `cast` (Foundry) | Optional | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` |
+| `jq` | Optional | For ergonomic config inspection |
+| `git` | Yes | To clone the repo |
+| `pip` packages | **No** | The engine uses only the Python standard library |
+| `npm` packages | **No** | The CLI is bash, not Node |
+
+## Tests
+
+```bash
+pytest tests/ -v  # or: bash scripts/memory.sh demo
+```
+
+The test suite covers the engine's heuristics, the JSON output schema, and (when run with `cast` installed) a live RPC smoke test against Pharos Pacific Mainnet.
+
+## Repository layout
+
+```
+.
+├── README.md                  # this file
+├── SKILL.md                   # Agent-side description (loaded by Claude/Codex/etc.)
+├── scripts/
+│   └── memory.sh          # bash + cast engine — the entire skill
+├── assets/
+│   └── networks.json          # Pharos Skill Engine network config
+└── tests/
+    └── test_*.sh              # bash smoke test
+```
 ## License
 
 MIT
