@@ -31,19 +31,37 @@ python3 scripts/pharos_memory.py init
 
 ## Install
 
+### 1. Install Foundry (the engine the skill is built on)
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+Verify with `cast --version`. This gives you `cast`, `forge`, `anvil`, and `chisel` on your `$PATH`.
+
+### 2. Install jq (used to parse JSON)
+
+```bash
+# macOS
+brew install jq
+# Debian/Ubuntu/Termux
+apt install -y jq
+# Alpine
+apk add jq
+```
+
+Verify with `jq --version`.
+
+### 3. Get the skill
+
 ```bash
 git clone https://github.com/ruzkypazzy/Real-Brain
 cd Real-Brain
+chmod +x scripts/*.sh
 ```
 
-That's it. No `npm install`, no `forge build`, no compile. The skill is pure Python 3.10+ with **no external dependencies** (it uses only the standard library — no `requests`, no `httpx`).
-
-The only optional dep is `pytest` if you want to run the test suite:
-
-```bash
-pip install pytest
-```
-
+That's it. No `pip install`, no `npm install`, no `forge build`, no compile. The skill is one or more bash scripts that use `cast` (from Foundry) for every RPC read. The `assets/networks.json` file already knows the Pharos Pacific Mainnet and Atlantic Testnet endpoints.
 ## How a beginner uses it — full walkthrough
 
 ### Scenario: "I want my agent to remember which wallet I work on"
