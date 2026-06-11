@@ -61,6 +61,68 @@ chmod +x scripts/*.sh
 ```
 
 That's it. No build step, no native compilation. The skill is a Python 3.9+ module wrapped by a bash CLI for easy invocation.
+## Quick test (try it in 30 seconds)
+
+After the 3-step install above, run the demo mode (no private key, no RPC, no setup):
+
+```bash
+python3 scripts/pharos_memory.py remember --key test --value hello && python3 scripts/pharos_memory.py recall --key test
+```
+
+You should see a printed report. The demo uses synthetic data, so it works offline.
+
+To run a real check on a Pharos transaction, wallet, or token, replace the placeholder:
+
+```bash
+python3 scripts/pharos_memory.py remember --chain mainnet --key wallet:active --value 0xYOUR_WALLET
+```
+
+## Use in an AI agent (Claude Code / Codex / OpenClaw / Pharos Agent Center)
+
+The skill ships with a `SKILL.md` that AI agents auto-load. Once installed in your agent, just ask in natural language — the agent will read `SKILL.md` and run the bash script for you.
+
+```text
+"Remember that 0xabc... is the wallet I work on."
+```
+
+The agent will run `python3 scripts/pharos_memory.py remember --key test --value hello && python3 scripts/pharos_memory.py recall --key test` (or the live command with the address you gave) and read the result back to you.
+
+### Install in your agent
+
+**Option A — Pharos Agent Center** (one-line install):
+
+```bash
+# from inside any agent that has the Pharos Agent Center CLI
+pharos-skill install https://github.com/ruzkypazzy/Real-Brain
+```
+
+**Option B — OpenClaw / Claude Code / Codex** (one-line via npm):
+
+```bash
+npx skills add https://github.com/ruzkypazzy/Real-Brain
+```
+
+**Option C — Manual install** (drop into your agent's skills directory):
+
+```bash
+# Clone the skill
+git clone https://github.com/ruzkypazzy/Real-Brain
+cd Real-Brain
+
+# Claude Code: copy to ~/.claude/skills/
+mkdir -p ~/.claude/skills/Real-Brain
+cp -r . ~/.claude/skills/Real-Brain/
+
+# Codex: copy to ~/.codex/skills/
+mkdir -p ~/.codex/skills/Real-Brain
+cp -r . ~/.codex/skills/Real-Brain/
+
+# OpenClaw: copy to ~/.openclaw/skills/
+mkdir -p ~/.openclaw/skills/Real-Brain
+cp -r . ~/.openclaw/skills/Real-Brain/
+
+# Then restart the agent — the skill will be auto-loaded.
+```
 ## How a beginner uses it — full walkthrough
 
 ### Scenario: "I want my agent to remember which wallet I work on"
